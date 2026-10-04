@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/content/app_copy.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/icon_style.dart';
+import '../providers/providers.dart';
+import '../widgets/app_bottom_nav.dart';
 import 'notifications_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final email = ref.watch(authProvider.select((s) => s.email));
     return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 20, bottom: 120),
       child: Column(
@@ -27,7 +31,10 @@ class ProfileScreen extends StatelessWidget {
                 IconButton(
                   onPressed: () {
                     HapticFeedback.selectionClick();
-                    // TODO: Logout logic
+                    ref.read(authProvider.notifier).signOut();
+                    ref
+                        .read(currentTabProvider.notifier)
+                        .select(AppTab.explore);
                   },
                   icon: const Icon(Icons.logout_rounded),
                   color: AppColors.error,
@@ -110,10 +117,13 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 32),
 
           // User Info
-          const Text('Ryan Sterling', style: AppTextStyles.h2),
+          Text(
+            email.isEmpty ? 'Signed in with Google' : email,
+            style: AppTextStyles.h2,
+          ),
           const SizedBox(height: 4),
           Text(
-            'ID No : 1105486242',
+            'Kochi advertiser',
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
           ),
           const SizedBox(height: 48),
@@ -192,10 +202,9 @@ class _SettingsItem extends StatelessWidget {
   const _SettingsItem({
     required this.icon,
     required this.label,
-    this.trailingText,
     this.showBorder = true,
     this.onTap,
-  });
+  }) : trailingText = null;
 
   final IconData icon;
   final String label;

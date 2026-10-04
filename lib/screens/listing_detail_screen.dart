@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/content/app_copy.dart';
 import '../core/theme/app_colors.dart';
@@ -6,15 +7,16 @@ import '../core/theme/app_text_styles.dart';
 import '../core/theme/button_style.dart';
 import '../core/theme/icon_style.dart';
 import '../models/billboard_listing.dart';
+import '../providers/providers.dart';
 import '../widgets/map/stylized_map.dart';
 
 /// Product page for a single billboard listing: photos, location, size,
 /// illumination, price, and availability, with actions to save it or
 /// submit a booking request.
 ///
-/// Save / Request to book are stubbed with TODOs — both require OTP
-/// sign-in and a booking data layer that don't exist yet.
-class ListingDetailScreen extends StatelessWidget {
+/// Save toggles [wishlistProvider]; Request to book files a pending
+/// request in [campaignsProvider] using the dates from the search card.
+class ListingDetailScreen extends ConsumerWidget {
   const ListingDetailScreen({super.key, required this.listing});
 
   final BillboardListing listing;
@@ -30,16 +32,29 @@ class ListingDetailScreen extends StatelessWidget {
     return '₹$buffer';
   }
 
-  void _handleSave(BuildContext context) {
-    // TODO: gate behind OTP sign-in, then add to wishlist.
+  void _handleSave(WidgetRef ref) {
+    ref.read(wishlistIdsProvider.notifier).toggle(listing.id);
   }
 
-  void _handleRequestBooking(BuildContext context) {
-    // TODO: gate behind OTP sign-in, then submit a booking request.
+  void _handleRequestBooking(BuildContext context, WidgetRef ref) {
+    final dates = ref.read(searchFilterProvider).dates;
+    final filed = ref.read(campaignsProvider.notifier).request(listing, dates);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            filed
+                ? 'Request sent. Track it under Campaigns.'
+                : 'You already have a pending request for this space.',
+          ),
+        ),
+      );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final saved = ref.watch(isSavedProvider(listing.id));
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -98,29 +113,34 @@ class ListingDetailScreen extends StatelessWidget {
                           const Text('Key Details', style: AppTextStyles.h3),
                           const SizedBox(height: 16),
                           _DetailRow(
-                              icon: Icons.visibility_rounded,
-                              label: 'Estimated Traffic',
-                              value: listing.dailyTraffic),
+                            icon: Icons.visibility_rounded,
+                            label: 'Estimated Traffic',
+                            value: listing.dailyTraffic,
+                          ),
                           const SizedBox(height: 12),
                           _DetailRow(
-                              icon: Icons.explore_outlined,
-                              label: 'Orientation',
-                              value: listing.orientation),
+                            icon: Icons.explore_outlined,
+                            label: 'Orientation',
+                            value: listing.orientation,
+                          ),
                           const SizedBox(height: 12),
                           _DetailRow(
-                              icon: Icons.layers_outlined,
-                              label: 'Material',
-                              value: listing.materialType),
+                            icon: Icons.layers_outlined,
+                            label: 'Material',
+                            value: listing.materialType,
+                          ),
                           const SizedBox(height: 12),
                           _DetailRow(
-                              icon: Icons.calendar_month_rounded,
-                              label: 'Min. Booking',
-                              value: listing.minBookingDuration),
+                            icon: Icons.calendar_month_rounded,
+                            label: 'Min. Booking',
+                            value: listing.minBookingDuration,
+                          ),
                           const SizedBox(height: 12),
                           _DetailRow(
-                              icon: Icons.gpp_maybe_outlined,
-                              label: 'Restrictions',
-                              value: listing.restrictions),
+                            icon: Icons.gpp_maybe_outlined,
+                            label: 'Restrictions',
+                            value: listing.restrictions,
+                          ),
                           const SizedBox(height: 24),
                           const Divider(color: AppColors.hairline, height: 1),
                           const SizedBox(height: 24),
@@ -162,15 +182,15 @@ class ListingDetailScreen extends StatelessWidget {
                             clipBehavior: Clip.antiAlias,
                             child: Stack(
                               children: [
-                                const Positioned.fill(
-                                  child: MiniMap(),
-                                ),
+                                const Positioned.fill(child: MiniMap()),
                                 Center(
                                   child: Container(
                                     width: 48,
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Center(
@@ -180,10 +200,14 @@ class ListingDetailScreen extends StatelessWidget {
                                         decoration: BoxDecoration(
                                           color: AppColors.primary,
                                           shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.white, width: 3),
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 3,
+                                          ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: AppColors.primary.withValues(alpha: 0.4),
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.4),
                                               blurRadius: 8,
                                             ),
                                           ],
@@ -199,12 +223,19 @@ class ListingDetailScreen extends StatelessWidget {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.location_on_rounded, size: 20, color: AppColors.primary),
+                              const Icon(
+                                Icons.location_on_rounded,
+                                size: 20,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   listing.landmark,
-                                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.w600),
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.primaryDark,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -218,8 +249,9 @@ class ListingDetailScreen extends StatelessWidget {
             ),
             _BottomActionBar(
               priceLabel: _formattedPrice,
-              onSave: () => _handleSave(context),
-              onRequestBooking: () => _handleRequestBooking(context),
+              isSaved: saved,
+              onSave: () => _handleSave(ref),
+              onRequestBooking: () => _handleRequestBooking(context, ref),
             ),
           ],
         ),
@@ -229,20 +261,19 @@ class ListingDetailScreen extends StatelessWidget {
 }
 
 /// Tinted motif header standing in for listing photography until real
-/// photo upload exists in the Admin Panel. Now implemented as a 
+/// photo upload exists in the Admin Panel. Now implemented as a
 /// rounded carousel per the design request.
-class _PhotoHeader extends StatefulWidget {
+class _PhotoHeader extends ConsumerStatefulWidget {
   const _PhotoHeader({required this.onBack});
 
   final VoidCallback onBack;
 
   @override
-  State<_PhotoHeader> createState() => _PhotoHeaderState();
+  ConsumerState<_PhotoHeader> createState() => _PhotoHeaderState();
 }
 
-class _PhotoHeaderState extends State<_PhotoHeader> {
+class _PhotoHeaderState extends ConsumerState<_PhotoHeader> {
   final PageController _pageController = PageController();
-  int _currentIndex = 0;
 
   @override
   void dispose() {
@@ -252,6 +283,7 @@ class _PhotoHeaderState extends State<_PhotoHeader> {
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(photoIndexProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Stack(
@@ -269,8 +301,7 @@ class _PhotoHeaderState extends State<_PhotoHeader> {
               children: [
                 PageView.builder(
                   controller: _pageController,
-                  onPageChanged: (index) =>
-                      setState(() => _currentIndex = index),
+                  onPageChanged: ref.read(photoIndexProvider.notifier).set,
                   itemCount: 3,
                   itemBuilder: (context, index) {
                     return Container(
@@ -306,10 +337,10 @@ class _PhotoHeaderState extends State<_PhotoHeader> {
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentIndex == index ? 24 : 8,
+                        width: currentIndex == index ? 24 : 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: _currentIndex == index
+                          color: currentIndex == index
                               ? AppColors.primary
                               : AppColors.hairline,
                           borderRadius: BorderRadius.circular(4),
@@ -324,8 +355,10 @@ class _PhotoHeaderState extends State<_PhotoHeader> {
           Positioned(
             top: 12,
             left: 12,
-            child:
-                AppIconButton(icon: Icons.arrow_back_ios_rounded, onTap: widget.onBack),
+            child: AppIconButton(
+              icon: Icons.arrow_back_ios_rounded,
+              onTap: widget.onBack,
+            ),
           ),
         ],
       ),
@@ -355,9 +388,12 @@ class _DetailRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.textMuted)),
+              Text(
+                label,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
               const SizedBox(height: 2),
               Text(value, style: AppTextStyles.bodyMedium),
             ],
@@ -367,8 +403,6 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
-
-
 
 class _FactChip extends StatelessWidget {
   const _FactChip({required this.icon, required this.label});
@@ -399,11 +433,13 @@ class _FactChip extends StatelessWidget {
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.priceLabel,
+    required this.isSaved,
     required this.onSave,
     required this.onRequestBooking,
   });
 
   final String priceLabel;
+  final bool isSaved;
   final VoidCallback onSave;
   final VoidCallback onRequestBooking;
 
@@ -433,7 +469,13 @@ class _BottomActionBar extends StatelessWidget {
               ),
             ),
           ),
-          AppIconButton(icon: Icons.favorite_border_rounded, onTap: onSave),
+          AppIconButton(
+            icon: isSaved
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            iconColor: isSaved ? AppColors.primary : AppIconColor.dark,
+            onTap: onSave,
+          ),
           const SizedBox(width: 10),
           ElevatedButton(
             onPressed: onRequestBooking,
