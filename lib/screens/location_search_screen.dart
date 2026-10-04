@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/icon_style.dart';
-import '../data/mock_listings.dart';
+import '../providers/providers.dart';
 
 /// A centered dialog with a flawless Container Transform animation.
 /// It identically matches the SearchCard's location row aesthetic at the top,
 /// seamlessly expanding into a full search menu.
-class LocationSearchDialog extends StatefulWidget {
+class LocationSearchDialog extends ConsumerStatefulWidget {
   const LocationSearchDialog({super.key});
 
   @override
-  State<LocationSearchDialog> createState() => _LocationSearchDialogState();
+  ConsumerState<LocationSearchDialog> createState() =>
+      _LocationSearchDialogState();
 }
 
-class _LocationSearchDialogState extends State<LocationSearchDialog> {
+class _LocationSearchDialogState extends ConsumerState<LocationSearchDialog> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -37,6 +39,7 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final suggestions = ref.watch(locationSuggestionsProvider);
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -45,7 +48,9 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
         tag: 'search_location',
         child: Material(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16), // Match SearchCard corner radius perfectly
+          borderRadius: BorderRadius.circular(
+            16,
+          ), // Match SearchCard corner radius perfectly
           clipBehavior: Clip.antiAlias,
           child: Container(
             width: double.infinity,
@@ -55,7 +60,10 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
               children: [
                 // Top Search Field mirroring `_SearchRow` in `SearchCard` exactly
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
+                  ),
                   child: Row(
                     children: [
                       const Icon(
@@ -68,10 +76,15 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                         child: TextField(
                           controller: _controller,
                           focusNode: _focusNode,
+                          onChanged: ref
+                              .read(locationQueryProvider.notifier)
+                              .set,
                           style: AppTextStyles.bodyLarge,
                           decoration: InputDecoration(
                             hintText: 'Search location...',
-                            hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textMuted),
+                            hintStyle: AppTextStyles.bodyLarge.copyWith(
+                              color: AppColors.textMuted,
+                            ),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
@@ -81,11 +94,15 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                     ],
                   ),
                 ),
-                const Divider(color: AppColors.hairline, height: 1, thickness: 1),
+                const Divider(
+                  color: AppColors.hairline,
+                  height: 1,
+                  thickness: 1,
+                ),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: mockListings.length,
+                    itemCount: suggestions.length,
                     separatorBuilder: (context, index) => const Divider(
                       color: AppColors.hairline,
                       height: 1,
@@ -93,13 +110,16 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                       indent: 56, // 16 (padding) + 24 (icon) + 16 (gap)
                     ),
                     itemBuilder: (context, index) {
-                      final listing = mockListings[index];
+                      final listing = suggestions[index];
                       return InkWell(
                         onTap: () {
                           Navigator.of(context).pop(listing.area);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           child: Row(
                             children: [
                               const Icon(
@@ -122,7 +142,9 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                                     const SizedBox(height: 2),
                                     Text(
                                       listing.landmark,
-                                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textMuted,
+                                      ),
                                     ),
                                   ],
                                 ),

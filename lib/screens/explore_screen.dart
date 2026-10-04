@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/content/app_copy.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/button_style.dart';
-import '../data/mock_listings.dart';
 import '../models/billboard_listing.dart';
+import '../providers/providers.dart';
 import '../widgets/explore/ad_space_types.dart';
 import '../widgets/explore/available_spaces.dart';
 import '../widgets/explore/search_card.dart';
@@ -28,21 +29,14 @@ import 'search_results_screen.dart';
 /// "Search by type" is intentionally omitted — V1 supports static
 /// billboards only, so a type picker would set expectations Layoq
 /// can't meet yet.
-class ExploreScreen extends StatefulWidget {
+class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
 
   @override
-  State<ExploreScreen> createState() => _ExploreScreenState();
+  ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
-  final TextEditingController _areaController = TextEditingController();
-  DateTimeRange? _campaignDates;
-
-  // Swap to true once real browsing history is wired up, to show
-  // "Recently viewed" in place of the first-time browse prompt.
-  // final bool _hasBrowsingHistory = false;
-
+class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   static const List<String> _months = [
     'Jan',
     'Feb',
@@ -58,12 +52,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
     'Dec',
   ];
 
-  @override
-  void dispose() {
-    _areaController.dispose();
-    super.dispose();
-  }
-
   Future<void> _pickCampaignDates() async {
     // final now = DateTime.now();
     final picked = await Navigator.of(context).push<DateTimeRange>(
@@ -73,7 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         barrierColor: Colors.black.withValues(alpha: 0.5),
         transitionDuration: const Duration(milliseconds: 350),
         pageBuilder: (_, _, _) {
-          return DateSearchDialog(initialDateRange: _campaignDates);
+          return const DateSearchDialog();
         },
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -82,7 +70,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
 
     if (picked != null) {
-      setState(() => _campaignDates = picked);
+      ref.read(searchFilterProvider.notifier).setDates(picked);
     }
   }
 
@@ -104,16 +92,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   void _handleSearch() {
     HapticFeedback.selectionClick();
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SearchResultsScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const SearchResultsScreen()));
   }
 
   void _handleBrowseAll() {
-    // TODO: navigate to an unfiltered listings view.
+    ref.read(searchFilterProvider.notifier).setArea('');
+    _handleSearch();
   }
 
   void _openListing(BillboardListing listing) {
+    ref.read(recentlyViewedIdsProvider.notifier).add(listing.id);
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ListingDetailScreen(listing: listing)),
     );
@@ -121,6 +110,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dates = ref.watch(searchFilterProvider.select((f) => f.dates));
+    final listings = ref.watch(listingsProvider);
+    final recent = ref.watch(recentlyViewedProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 20, bottom: 32),
       child: Column(
@@ -164,11 +156,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 ),
                 const SizedBox(height: 24),
                 SearchCard(
-                  areaController: _areaController,
-                  campaignDates: _campaignDates,
-                  dateLabel: _campaignDates == null
-                      ? null
-                      : _formatRange(_campaignDates!),
+                  dateLabel: dates == null ? null : _formatRange(dates),
                   onPickDates: _pickCampaignDates,
                   onSearch: _handleSearch,
                 ),
@@ -200,27 +188,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
           ),
-          AvailableSpacesRow(listings: mockListings, onTap: _openListing),
+          AvailableSpacesRow(listings: listings, onTap: _openListing),
           const SizedBox(height: 32),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Recently Checked Space', style: AppTextStyles.h3),
-                  SizedBox(height: 4),
-                  Text(
-                    'Pick up right where you left off',
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                ],
+          if (recent.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Recently Checked Space', style: AppTextStyles.h3),
+                    SizedBox(height: 4),
+                    Text(
+                      'Pick up right where you left off',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          AvailableSpacesRow(listings: mockListings, onTap: _openListing),
+            AvailableSpacesRow(listings: recent, onTap: _openListing),
+          ],
           const SizedBox(height: 120), // Padding for the floating pill navbar
         ],
       ),

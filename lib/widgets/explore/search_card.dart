@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/content/app_copy.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/button_style.dart';
 import '../../core/theme/icon_style.dart';
+import '../../providers/providers.dart';
 import '../../screens/location_search_screen.dart';
 
 /// The search card's job is to feel like one object, not a stack of
@@ -14,24 +16,21 @@ import '../../screens/location_search_screen.dart';
 /// The primary action sits below that surface as a left-aligned pill
 /// button — not overlapping it, so it can never cover either row's
 /// content regardless of text metrics.
-class SearchCard extends StatelessWidget {
+class SearchCard extends ConsumerWidget {
   const SearchCard({
-    required this.areaController,
-    required this.campaignDates,
     required this.dateLabel,
     required this.onPickDates,
     required this.onSearch,
     super.key,
   });
 
-  final TextEditingController areaController;
-  final DateTimeRange? campaignDates;
   final String? dateLabel;
   final VoidCallback onPickDates;
   final VoidCallback onSearch;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final area = ref.watch(searchFilterProvider.select((f) => f.area));
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -94,25 +93,16 @@ class SearchCard extends StatelessWidget {
                                 ),
                               );
                           if (result != null) {
-                            areaController.text = result;
+                            ref.read(searchFilterProvider.notifier).setArea(result);
                           }
                         },
-                        // We use a Builder to access the controller's text if needed,
-                        // but since SearchCard is stateless we can use ValueListenableBuilder
-                        child: ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: areaController,
-                          builder: (context, value, child) {
-                            return Text(
-                              value.text.isEmpty
-                                  ? AppCopy.searchHint
-                                  : value.text,
-                              style: value.text.isEmpty
-                                  ? AppTextStyles.bodyLarge.copyWith(
-                                      color: AppColors.textMuted,
-                                    )
-                                  : AppTextStyles.bodyLarge,
-                            );
-                          },
+                        child: Text(
+                          area.isEmpty ? AppCopy.searchHint : area,
+                          style: area.isEmpty
+                              ? AppTextStyles.bodyLarge.copyWith(
+                                  color: AppColors.textMuted,
+                                )
+                              : AppTextStyles.bodyLarge,
                         ),
                       ),
                     ),
