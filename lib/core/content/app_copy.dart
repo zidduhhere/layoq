@@ -48,6 +48,25 @@ class AppCopy {
   static const String notificationsEmptyBody =
       'When you get updates about your bookings, they\'ll appear here.';
 
+  // Auth
+  static const String authHeadline = 'Find the right wall for your brand.';
+  static const String authEmailLabel = 'Email';
+  static const String authEmailHint = 'you@company.com';
+  static const String authEmailInvalid = 'Enter a valid email address.';
+  static const String authSendCode = 'Sign Up';
+  static const String authOr = 'or';
+  static const String authGoogle = 'Continue with Google';
+  static const String authOtpTitle = 'Enter the code';
+  static String authOtpBody(String email) =>
+      'We sent a 6-digit code to $email.';
+  static const String authOtpIncomplete = 'Enter all 6 digits.';
+  static const String authVerify = 'Verify and continue';
+  static const String authChangeEmail = 'Use a different email';
+  static const String authResend = 'Resend code';
+  static String authResendIn(int s) => 'Resend code in ${s}s';
+  static const String authTerms =
+      'By continuing, you agree to the Terms & policies.';
+
   // Profile
   static const String profileTitle = 'Profile';
   static const String signInPrompt = 'Sign in to manage your bookings.';

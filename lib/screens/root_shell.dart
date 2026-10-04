@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/providers.dart';
 import '../widgets/app_bottom_nav.dart';
 import 'campaigns_screen.dart';
 import 'explore_screen.dart';
@@ -9,16 +11,9 @@ import 'wishlist_screen.dart';
 
 /// App shell owning the single bottom nav and the 4 top-level tab
 /// bodies. Each body keeps its state alive across tab switches via
-/// [IndexedStack] rather than being rebuilt from scratch.
-class RootShell extends StatefulWidget {
+/// [IndexedStack]; the selected tab lives in [currentTabProvider].
+class RootShell extends ConsumerWidget {
   const RootShell({super.key});
-
-  @override
-  State<RootShell> createState() => _RootShellState();
-}
-
-class _RootShellState extends State<RootShell> {
-  AppTab _currentTab = AppTab.explore;
 
   static const List<Widget> _tabBodies = [
     ExploreScreen(),
@@ -28,7 +23,8 @@ class _RootShellState extends State<RootShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentTab = ref.watch(currentTabProvider);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -37,13 +33,13 @@ class _RootShellState extends State<RootShell> {
         body: SafeArea(
           bottom: false,
           child: IndexedStack(
-            index: AppTab.values.indexOf(_currentTab),
+            index: AppTab.values.indexOf(currentTab),
             children: _tabBodies,
           ),
         ),
         bottomNavigationBar: AppBottomNav(
-          currentTab: _currentTab,
-          onTabSelected: (tab) => setState(() => _currentTab = tab),
+          currentTab: currentTab,
+          onTabSelected: ref.read(currentTabProvider.notifier).select,
         ),
       ),
     );
