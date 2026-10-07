@@ -8,10 +8,9 @@ import '../core/theme/app_text_styles.dart';
 import '../core/theme/button_style.dart';
 import '../providers/providers.dart';
 import '../widgets/explore/billboard_motif.dart';
+import 'root_shell.dart';
 
-/// First screen of the app. Email + 6-digit code, or Google. Auth is
-/// not wired to a backend yet: any well-formed email and any 6 digits
-/// proceed to the home shell.
+/// First screen of the app. Email magic link (Supabase), or Google.
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
 
@@ -20,41 +19,31 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
-  static const int _codeLength = AuthNotifier.codeLength;
-
   final _emailController = TextEditingController();
   final _emailFocus = FocusNode();
-  final _codeController = TextEditingController();
-  final _codeFocus = FocusNode();
 
   @override
   void dispose() {
     _emailController.dispose();
     _emailFocus.dispose();
-    _codeController.dispose();
-    _codeFocus.dispose();
     super.dispose();
   }
 
-  // Signing in flips authProvider.signedIn, and LayoqApp swaps this
-  // screen for the home shell — no manual navigation needed.
-  void _sendCode() {
-    if (ref.read(authProvider.notifier).sendCode(_emailController.text)) {
-      HapticFeedback.selectionClick();
-      _codeController.clear();
-      _codeFocus.requestFocus();
-    }
-  }
-
-  void _verify() {
-    if (ref.read(authProvider.notifier).verify(_codeController.text)) {
-      HapticFeedback.mediumImpact();
-    }
+  // Signing in happens when the user taps the emailed link and the app
+  // reopens: the session stream flips authProvider.signedIn and
+  // LayoqApp swaps this screen for the home shell.
+  Future<void> _sendLink() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const RootShell()),
+    );
   }
 
   void _google() {
     HapticFeedback.mediumImpact();
-    ref.read(authProvider.notifier).signInWithGoogle();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const RootShell()),
+    );
   }
 
   @override
@@ -63,31 +52,53 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.primary,
+        // White, not primary: whatever sits behind the keyboard (and its
+        // rounded corners) is the scaffold colour. Primary is painted
+        // only behind the hero and the sheet's top corners below.
+        backgroundColor: Colors.white,
         resizeToAvoidBottomInset: true,
         body: Column(
           children: [
-            const Expanded(flex: 4, child: _BillboardHero()),
+            const Expanded(
+              flex: 4,
+              child: ColoredBox(
+                color: AppColors.primary,
+                child: _BillboardHero(),
+              ),
+            ),
             Expanded(
               flex: 6,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: step == AuthStep.email
-                          ? _buildEmail()
-                          : _buildOtp(),
+              child: Stack(
+                children: [
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 28,
+                    child: ColoredBox(color: AppColors.primary),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: step == AuthStep.email
+                              ? _buildEmail()
+                              : _buildLinkSent(),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
@@ -98,6 +109,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Widget _buildEmail() {
     final error = ref.watch(authProvider.select((s) => s.error));
+    final sending = ref.watch(authProvider.select((s) => s.sending));
     return Column(
       key: const ValueKey('email'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,9 +122,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             controller: _emailController,
             focusNode: _emailFocus,
             keyboardType: TextInputType.emailAddress,
+            keyboardAppearance: Brightness.light,
             autofillHints: const [AutofillHints.email],
             textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _sendCode(),
+            onSubmitted: (_) => _sendLink(),
             onChanged: (_) => ref.read(authProvider.notifier).clearError(),
             style: AppTextStyles.bodyLarge,
             cursorColor: AppColors.primary,
@@ -122,9 +135,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         _errorText(),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: _sendCode,
+          onPressed: sending ? null : _sendLink,
           style: AppButtonStyle.primary(fullWidth: true),
-          child: const Text(AppCopy.authSendCode),
+          child: sending
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(AppCopy.authSendCode),
         ),
         const SizedBox(height: 20),
         Row(
@@ -181,34 +203,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     );
   }
 
-  Widget _buildOtp() {
+  Widget _buildLinkSent() {
     final auth = ref.watch(authProvider);
     return Column(
-      key: const ValueKey('otp'),
+      key: const ValueKey('linkSent'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppCopy.authOtpTitle, style: AppTextStyles.h2),
+        Text(AppCopy.authLinkTitle, style: AppTextStyles.h2),
         const SizedBox(height: 6),
-        Text(AppCopy.authOtpBody(auth.email), style: AppTextStyles.bodyMedium),
-        const SizedBox(height: 20),
-        _CodeBoxes(
-          controller: _codeController,
-          focusNode: _codeFocus,
-          length: _codeLength,
-          hasError: auth.error != null,
-          onChanged: () {
-            ref.read(authProvider.notifier).clearError();
-            if (_codeController.text.length == _codeLength) _verify();
-          },
-        ),
+        Text(AppCopy.authLinkBody(auth.email), style: AppTextStyles.bodyMedium),
         _errorText(),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: _verify,
-          style: AppButtonStyle.primary(fullWidth: true),
-          child: const Text(AppCopy.authVerify),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -217,9 +222,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               child: const Text(AppCopy.authChangeEmail),
             ),
             TextButton(
-              onPressed: auth.secondsLeft > 0
+              onPressed: auth.secondsLeft > 0 || auth.sending
                   ? null
-                  : ref.read(authProvider.notifier).resendCode,
+                  : ref.read(authProvider.notifier).resendLink,
               child: Text(
                 auth.secondsLeft > 0
                     ? AppCopy.authResendIn(auth.secondsLeft)
@@ -318,94 +323,6 @@ class _BillboardHero extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Six visual boxes driven by one invisible text field, so paste,
-/// autofill and backspace all behave natively.
-class _CodeBoxes extends StatelessWidget {
-  const _CodeBoxes({
-    required this.controller,
-    required this.focusNode,
-    required this.length,
-    required this.onChanged,
-    this.hasError = false,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final int length;
-  final VoidCallback onChanged;
-  final bool hasError;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: focusNode.requestFocus,
-      behavior: HitTestBehavior.opaque,
-      child: Stack(
-        children: [
-          Opacity(
-            opacity: 0,
-            child: SizedBox(
-              height: 56,
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                keyboardType: TextInputType.number,
-                autofillHints: const [AutofillHints.oneTimeCode],
-                maxLength: length,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (_) => onChanged(),
-                enableInteractiveSelection: false,
-                decoration: const InputDecoration(counterText: ''),
-              ),
-            ),
-          ),
-          IgnorePointer(
-            child: ListenableBuilder(
-              listenable: Listenable.merge([controller, focusNode]),
-              builder: (context, _) {
-                final text = controller.text;
-                return Row(
-                  children: [
-                    for (var i = 0; i < length; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      Expanded(
-                        child: _box(
-                          i < text.length ? text[i] : '',
-                          active:
-                              focusNode.hasFocus &&
-                              i == text.length.clamp(0, length - 1),
-                        ),
-                      ),
-                    ],
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _box(String digit, {required bool active}) {
-    final color = hasError
-        ? AppColors.error
-        : active
-        ? AppColors.primary
-        : AppColors.hairline;
-    return Container(
-      height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color, width: active ? 1.5 : 1),
-      ),
-      child: Text(digit, style: AppTextStyles.h2),
     );
   }
 }
