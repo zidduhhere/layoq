@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 import 'icon_style.dart';
@@ -115,9 +116,7 @@ class AppButtonStyle {
 
   /// A chip-style button: compact padding, hairline border, no tinted fill.
   /// Typically used for horizontal scrolling categories or filters.
-  static ButtonStyle chip({
-    AppButtonShape shape = AppButtonShape.pill,
-  }) {
+  static ButtonStyle chip({AppButtonShape shape = AppButtonShape.pill}) {
     return ButtonStyle(
       elevation: const WidgetStatePropertyAll(0),
       shadowColor: const WidgetStatePropertyAll(Colors.transparent),

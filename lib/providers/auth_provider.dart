@@ -1,20 +1,69 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../core/content/app_copy.dart';
 
-enum AuthStep { email, otp }
+/// Where the sign-in link sends the user back to. Must match the URL
+/// scheme in Info.plist / AndroidManifest and be listed under
+/// Supabase > Authentication > URL Configuration > Redirect URLs.
+const String authRedirectUrl = 'com.layoq.app://login-callback';
+
+enum AuthStep { email, linkSent }
+
+/// The slice of Supabase auth the app uses, so tests can fake it.
+abstract class AuthGateway {
+  bool get hasSession;
+  String? get email;
+
+  /// Emits whenever a session starts or ends (link tapped, sign-out,
+  /// token expiry).
+  Stream<({bool signedIn, String? email})> get changes;
+
+  Future<void> sendMagicLink(String email);
+  Future<void> signOut();
+}
+
+class SupabaseAuthGateway implements AuthGateway {
+  sb.GoTrueClient get _auth => sb.Supabase.instance.client.auth;
+
+  @override
+  bool get hasSession => _auth.currentSession != null;
+
+  @override
+  String? get email => _auth.currentUser?.email;
+
+  @override
+  Stream<({bool signedIn, String? email})> get changes => _auth
+      .onAuthStateChange
+      .map((e) => (signedIn: e.session != null, email: e.session?.user.email));
+
+  @override
+  Future<void> sendMagicLink(String email) => _auth.signInWithOtp(
+    email: email,
+    emailRedirectTo: authRedirectUrl,
+    shouldCreateUser: true,
+  );
+
+  @override
+  Future<void> signOut() => _auth.signOut();
+}
+
+final authGatewayProvider = Provider<AuthGateway>(
+  (ref) => SupabaseAuthGateway(),
+);
 
 /// Everything the auth screen and the app's sign-in gate need to know.
-/// Auth is not backed by a server yet: any valid email plus any 6
-/// digits signs in, and so does Google.
+/// Email sign-in is a Supabase magic link: the user taps the emailed
+/// link, the app reopens, and the session stream flips [signedIn].
 class AuthState {
   const AuthState({
     this.signedIn = false,
     this.step = AuthStep.email,
     this.email = '',
     this.error,
+    this.sending = false,
     this.secondsLeft = 0,
   });
 
@@ -22,6 +71,7 @@ class AuthState {
   final AuthStep step;
   final String email;
   final String? error;
+  final bool sending;
   final int secondsLeft;
 
   AuthState copyWith({
@@ -30,6 +80,7 @@ class AuthState {
     String? email,
     String? error,
     bool clearError = false,
+    bool? sending,
     int? secondsLeft,
   }) {
     return AuthState(
@@ -37,21 +88,35 @@ class AuthState {
       step: step ?? this.step,
       email: email ?? this.email,
       error: clearError ? null : (error ?? this.error),
+      sending: sending ?? this.sending,
       secondsLeft: secondsLeft ?? this.secondsLeft,
     );
   }
 }
 
 class AuthNotifier extends Notifier<AuthState> {
-  static const int codeLength = 6;
   static const int resendSeconds = 30;
 
   Timer? _timer;
 
   @override
   AuthState build() {
-    ref.onDispose(() => _timer?.cancel());
-    return const AuthState();
+    final gateway = ref.read(authGatewayProvider);
+    final sub = gateway.changes.listen(_onSessionChange);
+    ref.onDispose(() {
+      sub.cancel();
+      _timer?.cancel();
+    });
+    return AuthState(signedIn: gateway.hasSession, email: gateway.email ?? '');
+  }
+
+  void _onSessionChange(({bool signedIn, String? email}) e) {
+    if (e.signedIn) {
+      _timer?.cancel();
+      state = AuthState(signedIn: true, email: e.email ?? state.email);
+    } else if (state.signedIn) {
+      state = const AuthState();
+    }
   }
 
   static bool isValidEmail(String email) =>
@@ -61,37 +126,39 @@ class AuthNotifier extends Notifier<AuthState> {
     if (state.error != null) state = state.copyWith(clearError: true);
   }
 
-  /// Returns true when the code step was reached.
-  bool sendCode(String email) {
+  /// Emails a sign-in link. Returns true when it was sent.
+  Future<bool> sendLink(String email) async {
+    if (state.sending) return false;
     if (!isValidEmail(email)) {
       state = state.copyWith(error: AppCopy.authEmailInvalid);
       return false;
     }
+    final address = email.trim();
+    state = state.copyWith(sending: true, clearError: true);
+    try {
+      await ref.read(authGatewayProvider).sendMagicLink(address);
+    } on sb.AuthException catch (e) {
+      state = state.copyWith(sending: false, error: _friendly(e));
+      return false;
+    } catch (_) {
+      state = state.copyWith(sending: false, error: AppCopy.authSendFailed);
+      return false;
+    }
     state = state.copyWith(
-      email: email.trim(),
-      step: AuthStep.otp,
-      clearError: true,
+      sending: false,
+      email: address,
+      step: AuthStep.linkSent,
     );
     _startCountdown();
     return true;
   }
 
-  void resendCode() {
+  Future<void> resendLink() async {
     if (state.secondsLeft > 0) return;
-    _startCountdown();
+    await sendLink(state.email);
   }
 
-  /// Returns true when sign-in succeeded.
-  bool verify(String code) {
-    if (code.length < codeLength) {
-      state = state.copyWith(error: AppCopy.authOtpIncomplete);
-      return false;
-    }
-    _timer?.cancel();
-    state = state.copyWith(signedIn: true, clearError: true, secondsLeft: 0);
-    return true;
-  }
-
+  /// Placeholder: Google sign-in is not wired to Supabase yet.
   void signInWithGoogle() {
     _timer?.cancel();
     state = state.copyWith(signedIn: true, clearError: true, secondsLeft: 0);
@@ -106,9 +173,22 @@ class AuthNotifier extends Notifier<AuthState> {
     );
   }
 
-  void signOut() {
+  Future<void> signOut() async {
     _timer?.cancel();
+    try {
+      await ref.read(authGatewayProvider).signOut();
+    } catch (_) {
+      // Local state is cleared either way.
+    }
     state = const AuthState();
+  }
+
+  String _friendly(sb.AuthException e) {
+    final code = e.code ?? '';
+    if (code.contains('rate_limit') || e.statusCode == '429') {
+      return AppCopy.authRateLimited;
+    }
+    return AppCopy.authSendFailed;
   }
 
   void _startCountdown() {

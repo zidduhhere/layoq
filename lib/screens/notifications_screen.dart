@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../core/content/app_copy.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
@@ -29,17 +29,24 @@ class NotificationsScreen extends StatelessWidget {
                         HapticFeedback.selectionClick();
                         Navigator.of(context).pop();
                       },
-                      icon: const Icon(Icons.arrow_back_ios_rounded, size: 22, color: AppColors.primaryDark),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_rounded,
+                        size: 22,
+                        color: AppColors.primaryDark,
+                      ),
                       padding: const EdgeInsets.all(12),
                     ),
                     const SizedBox(width: 4),
-                    const Text(AppCopy.notificationsTitle, style: AppTextStyles.h1),
+                    const Text(
+                      AppCopy.notificationsTitle,
+                      style: AppTextStyles.h1,
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 32),
-              
-              // Notifications List 
+
+              // Notifications List
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -57,7 +64,8 @@ class NotificationsScreen extends StatelessWidget {
                       icon: Icons.receipt_long_rounded,
                       iconColor: AppColors.blue,
                       title: 'Invoice Available',
-                      message: 'Invoice #INV-2451 is ready for your recent booking.',
+                      message:
+                          'Invoice #INV-2451 is ready for your recent booking.',
                       time: '1d ago',
                       isUnread: true,
                     ),
@@ -111,7 +119,9 @@ class _NotificationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isUnread ? AppColors.fieldFill.withValues(alpha: 0.3) : Colors.white,
+        color: isUnread
+            ? AppColors.fieldFill.withValues(alpha: 0.3)
+            : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.hairline),
         boxShadow: [
@@ -134,73 +144,73 @@ class _NotificationItem extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.hairline),
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  size: AppIconSize.md,
-                  color: iconColor,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.hairline),
+                  ),
+                  child: Center(
+                    child: Icon(icon, size: AppIconSize.md, color: iconColor),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: isUnread ? FontWeight.w700 : FontWeight.w600,
-                            color: AppColors.primaryDark,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: isUnread
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
                           ),
+                          if (isUnread)
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        message,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: isUnread
+                              ? AppColors.primaryDark
+                              : AppColors.textMuted,
+                          height: 1.4,
                         ),
                       ),
-                      if (isUnread)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.only(left: 8),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        time,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
                         ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: isUnread ? AppColors.primaryDark : AppColors.textMuted,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    time,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
         ),
       ),
     );

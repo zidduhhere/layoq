@@ -61,8 +61,12 @@ class AppTheme {
       elevation: 0,
       type: BottomNavigationBarType.fixed,
     ),
-    elevatedButtonTheme: ElevatedButtonThemeData(style: AppButtonStyle.primary()),
-    outlinedButtonTheme: OutlinedButtonThemeData(style: AppButtonStyle.secondary()),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: AppButtonStyle.primary(),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: AppButtonStyle.secondary(),
+    ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,

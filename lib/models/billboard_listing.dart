@@ -22,7 +22,7 @@ class BillboardListing {
   final double heightFt;
   final bool illuminated;
   final int pricePerMonth;
-  
+
   // New details
   final String dailyTraffic;
   final String orientation;
@@ -30,5 +30,6 @@ class BillboardListing {
   final String minBookingDuration;
   final String restrictions;
 
-  String get sizeLabel => '${widthFt.toStringAsFixed(0)} x ${heightFt.toStringAsFixed(0)} ft';
+  String get sizeLabel =>
+      '${widthFt.toStringAsFixed(0)} x ${heightFt.toStringAsFixed(0)} ft';
 }

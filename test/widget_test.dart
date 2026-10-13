@@ -1,28 +1,87 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layoq/models/booking_request.dart';
 import 'package:layoq/providers/providers.dart';
 
+class FakeAuthGateway implements AuthGateway {
+  FakeAuthGateway({String? session}) : _email = session;
+
+  final _controller =
+      StreamController<({bool signedIn, String? email})>.broadcast();
+  final sentTo = <String>[];
+  bool signedOut = false;
+  String? _email;
+
+  void emit({required bool signedIn, String? email}) {
+    _email = signedIn ? email : null;
+    _controller.add((signedIn: signedIn, email: email));
+  }
+
+  @override
+  bool get hasSession => _email != null;
+  @override
+  String? get email => _email;
+  @override
+  Stream<({bool signedIn, String? email})> get changes => _controller.stream;
+  @override
+  Future<void> sendMagicLink(String email) async => sentTo.add(email);
+  @override
+  Future<void> signOut() async {
+    signedOut = true;
+    emit(signedIn: false);
+  }
+}
+
 void main() {
-  ProviderContainer make() {
-    final c = ProviderContainer();
+  ProviderContainer make([FakeAuthGateway? gateway]) {
+    final c = ProviderContainer(
+      overrides: [
+        authGatewayProvider.overrideWithValue(gateway ?? FakeAuthGateway()),
+      ],
+    );
     addTearDown(c.dispose);
     return c;
   }
 
-  test('auth: invalid email is rejected, valid email reaches code step', () {
-    final c = make();
-    final auth = c.read(authProvider.notifier);
-    expect(auth.sendCode('nope'), isFalse);
-    expect(c.read(authProvider).error, isNotNull);
-    expect(auth.sendCode('a@b.co'), isTrue);
-    expect(c.read(authProvider).step, AuthStep.otp);
-    expect(auth.verify('123'), isFalse);
-    expect(auth.verify('123456'), isTrue);
+  test(
+    'auth: invalid email is rejected, link is sent for a valid one',
+    () async {
+      final gateway = FakeAuthGateway();
+      final c = make(gateway);
+      final auth = c.read(authProvider.notifier);
+      expect(await auth.sendLink('nope'), isFalse);
+      expect(c.read(authProvider).error, isNotNull);
+      expect(gateway.sentTo, isEmpty);
+      expect(await auth.sendLink(' a@b.co '), isTrue);
+      expect(gateway.sentTo, ['a@b.co']);
+      expect(c.read(authProvider).step, AuthStep.linkSent);
+      expect(c.read(isSignedInProvider), isFalse);
+    },
+  );
+
+  test(
+    'auth: session from the tapped link signs in; sign-out clears it',
+    () async {
+      final gateway = FakeAuthGateway();
+      final c = make(gateway);
+      c.listen(authProvider, (_, _) {});
+      await c.read(authProvider.notifier).sendLink('a@b.co');
+      gateway.emit(signedIn: true, email: 'a@b.co');
+      await Future<void>.delayed(Duration.zero);
+      expect(c.read(isSignedInProvider), isTrue);
+      expect(c.read(authProvider).email, 'a@b.co');
+      await c.read(authProvider.notifier).signOut();
+      expect(gateway.signedOut, isTrue);
+      expect(c.read(isSignedInProvider), isFalse);
+    },
+  );
+
+  test('auth: restores an existing session on launch', () {
+    final c = make(FakeAuthGateway(session: 'a@b.co'));
     expect(c.read(isSignedInProvider), isTrue);
-    auth.signOut();
-    expect(c.read(isSignedInProvider), isFalse);
   });
 
   test('wishlist toggles listings', () {

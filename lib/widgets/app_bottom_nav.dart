@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -107,8 +108,10 @@ class AppBottomNav extends StatelessWidget {
                   for (int i = 0; i < selectedIndex; i++) {
                     leftOffset += _getTargetWidth(i, selectedIndex) + gap;
                   }
-                  final selectedWidth =
-                      _getTargetWidth(selectedIndex, selectedIndex);
+                  final selectedWidth = _getTargetWidth(
+                    selectedIndex,
+                    selectedIndex,
+                  );
 
                   return Stack(
                     clipBehavior: Clip.none,

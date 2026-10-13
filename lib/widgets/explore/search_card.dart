@@ -83,17 +83,18 @@ class SearchCard extends ConsumerWidget {
                                   ),
                                   pageBuilder: (_, _, _) =>
                                       const LocationSearchDialog(),
-                                  transitionsBuilder:
-                                      (_, animation, _, child) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        );
-                                      },
+                                  transitionsBuilder: (_, animation, _, child) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    );
+                                  },
                                 ),
                               );
                           if (result != null) {
-                            ref.read(searchFilterProvider.notifier).setArea(result);
+                            ref
+                                .read(searchFilterProvider.notifier)
+                                .setArea(result);
                           }
                         },
                         child: Text(

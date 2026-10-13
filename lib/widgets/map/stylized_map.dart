@@ -5,10 +5,7 @@ class StylizedMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _MapGridPainter(),
-    );
+    return CustomPaint(size: Size.infinite, painter: _MapGridPainter());
   }
 }
 
@@ -16,11 +13,11 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawColor(const Color(0xFFF9FAFB), BlendMode.src);
-    
+
     final gridPaint = Paint()
       ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 1;
-      
+
     // Draw subtle grid across the oversized map
     for (double i = 0; i < size.width; i += 50) {
       canvas.drawLine(Offset(i, 0), Offset(i, size.height), gridPaint);
@@ -28,7 +25,7 @@ class _MapGridPainter extends CustomPainter {
     for (double i = 0; i < size.height; i += 50) {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), gridPaint);
     }
-    
+
     // Draw thick stylized "roads" relative to the center of the oversized map
     final cx = size.width / 2;
     final cy = size.height / 2;
@@ -38,7 +35,7 @@ class _MapGridPainter extends CustomPainter {
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-      
+
     final borderPaint = Paint()
       ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 16
@@ -65,10 +62,7 @@ class MiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _MiniMapPainter(),
-    );
+    return CustomPaint(size: Size.infinite, painter: _MiniMapPainter());
   }
 }
 
@@ -76,24 +70,24 @@ class _MiniMapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawColor(const Color(0xFFF9FAFB), BlendMode.src);
-    
+
     final gridPaint = Paint()
       ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 1;
-      
+
     for (double i = 0; i < size.width; i += 30) {
       canvas.drawLine(Offset(i, 0), Offset(i, size.height), gridPaint);
     }
     for (double i = 0; i < size.height; i += 30) {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), gridPaint);
     }
-    
+
     final roadPaint = Paint()
       ..color = Colors.white
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-      
+
     final borderPaint = Paint()
       ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 10

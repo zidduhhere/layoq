@@ -53,17 +53,19 @@ class AppCopy {
   static const String authEmailLabel = 'Email';
   static const String authEmailHint = 'you@company.com';
   static const String authEmailInvalid = 'Enter a valid email address.';
-  static const String authSendCode = 'Sign Up';
+  static const String authSendCode = 'Email me a sign-in link';
+  static const String authSendFailed =
+      "We couldn't send the link. Check your connection and try again.";
+  static const String authRateLimited =
+      'Too many requests. Please wait a minute and try again.';
   static const String authOr = 'or';
   static const String authGoogle = 'Continue with Google';
-  static const String authOtpTitle = 'Enter the code';
-  static String authOtpBody(String email) =>
-      'We sent a 6-digit code to $email.';
-  static const String authOtpIncomplete = 'Enter all 6 digits.';
-  static const String authVerify = 'Verify and continue';
+  static const String authLinkTitle = 'Check your email';
+  static String authLinkBody(String email) =>
+      'We sent a sign-in link to $email. Open it on this phone to continue.';
   static const String authChangeEmail = 'Use a different email';
-  static const String authResend = 'Resend code';
-  static String authResendIn(int s) => 'Resend code in ${s}s';
+  static const String authResend = 'Resend link';
+  static String authResendIn(int s) => 'Resend link in ${s}s';
   static const String authTerms =
       'By continuing, you agree to the Terms & policies.';
 

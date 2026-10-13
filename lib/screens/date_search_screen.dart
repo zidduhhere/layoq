@@ -75,199 +75,205 @@ class _DateSearchDialogState extends ConsumerState<DateSearchDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                // Calendar header
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          DateTime tempMonth = currentMonth;
-                          final picked = await showDialog<DateTime>(
-                            context: context,
-                            builder: (context) {
-                              return StatefulBuilder(
-                                builder: (context, setDialogState) {
-                                  return Dialog(
-                                    backgroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.chevron_left_rounded,
-                                                  color: AppColors.primaryDark,
-                                                ),
-                                                onPressed: () =>
-                                                    setDialogState(() {
-                                                      tempMonth = DateTime(
-                                                        tempMonth.year - 1,
-                                                        tempMonth.month,
-                                                      );
-                                                    }),
-                                              ),
-                                              Text(
-                                                tempMonth.year.toString(),
-                                                style: AppTextStyles.h2,
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.chevron_right_rounded,
-                                                  color: AppColors.primaryDark,
-                                                ),
-                                                onPressed: () =>
-                                                    setDialogState(() {
-                                                      tempMonth = DateTime(
-                                                        tempMonth.year + 1,
-                                                        tempMonth.month,
-                                                      );
-                                                    }),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            alignment: WrapAlignment.center,
-                                            children: List.generate(12, (
-                                              index,
-                                            ) {
-                                              final isSelected =
-                                                  index + 1 == tempMonth.month;
-                                              return ChoiceChip(
-                                                label: Text(
-                                                  _months[index].substring(
-                                                    0,
-                                                    3,
-                                                  ),
-                                                  style: AppTextStyles
-                                                      .bodyMedium
-                                                      .copyWith(
-                                                        color: isSelected
-                                                            ? Colors.white
-                                                            : AppColors
-                                                                  .primaryDark,
-                                                        fontWeight: isSelected
-                                                            ? FontWeight.w700
-                                                            : FontWeight.w500,
-                                                      ),
-                                                ),
-                                                selected: isSelected,
-                                                selectedColor:
-                                                    AppColors.primary,
-                                                backgroundColor:
-                                                    AppColors.fieldFill,
-                                                showCheckmark: false,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  side: BorderSide.none,
-                                                ),
-                                                onSelected: (selected) {
-                                                  Navigator.of(context).pop(
-                                                    DateTime(
-                                                      tempMonth.year,
-                                                      index + 1,
-                                                    ),
-                                                  );
-                                                },
-                                              );
-                                            }),
-                                          ),
-                                        ],
+                  // Calendar header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            DateTime tempMonth = currentMonth;
+                            final picked = await showDialog<DateTime>(
+                              context: context,
+                              builder: (context) {
+                                return StatefulBuilder(
+                                  builder: (context, setDialogState) {
+                                    return Dialog(
+                                      backgroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
                                       ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                          if (picked != null) {
-                            notifier.setMonth(picked);
-                          }
-                        },
-                        child: Row(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.chevron_left_rounded,
+                                                    color:
+                                                        AppColors.primaryDark,
+                                                  ),
+                                                  onPressed: () =>
+                                                      setDialogState(() {
+                                                        tempMonth = DateTime(
+                                                          tempMonth.year - 1,
+                                                          tempMonth.month,
+                                                        );
+                                                      }),
+                                                ),
+                                                Text(
+                                                  tempMonth.year.toString(),
+                                                  style: AppTextStyles.h2,
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.chevron_right_rounded,
+                                                    color:
+                                                        AppColors.primaryDark,
+                                                  ),
+                                                  onPressed: () =>
+                                                      setDialogState(() {
+                                                        tempMonth = DateTime(
+                                                          tempMonth.year + 1,
+                                                          tempMonth.month,
+                                                        );
+                                                      }),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              alignment: WrapAlignment.center,
+                                              children: List.generate(12, (
+                                                index,
+                                              ) {
+                                                final isSelected =
+                                                    index + 1 ==
+                                                    tempMonth.month;
+                                                return ChoiceChip(
+                                                  label: Text(
+                                                    _months[index].substring(
+                                                      0,
+                                                      3,
+                                                    ),
+                                                    style: AppTextStyles
+                                                        .bodyMedium
+                                                        .copyWith(
+                                                          color: isSelected
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                    .primaryDark,
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.w700
+                                                              : FontWeight.w500,
+                                                        ),
+                                                  ),
+                                                  selected: isSelected,
+                                                  selectedColor:
+                                                      AppColors.primary,
+                                                  backgroundColor:
+                                                      AppColors.fieldFill,
+                                                  showCheckmark: false,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                    side: BorderSide.none,
+                                                  ),
+                                                  onSelected: (selected) {
+                                                    Navigator.of(context).pop(
+                                                      DateTime(
+                                                        tempMonth.year,
+                                                        index + 1,
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              }),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              notifier.setMonth(picked);
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Text(
+                                '${_months[currentMonth.month - 1]} ${currentMonth.year}',
+                                style: AppTextStyles.h3,
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.primaryDark,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
                           children: [
-                            Text(
-                              '${_months[currentMonth.month - 1]} ${currentMonth.year}',
-                              style: AppTextStyles.h3,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.chevron_left_rounded,
+                                color: AppColors.primaryDark,
+                              ),
+                              onPressed: notifier.prevMonth,
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: AppColors.primaryDark,
-                              size: 20,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.chevron_right_rounded,
+                                color: AppColors.primaryDark,
+                              ),
+                              onPressed: notifier.nextMonth,
                             ),
                           ],
                         ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.chevron_left_rounded,
-                              color: AppColors.primaryDark,
-                            ),
-                            onPressed: notifier.prevMonth,
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.chevron_right_rounded,
-                              color: AppColors.primaryDark,
-                            ),
-                            onPressed: notifier.nextMonth,
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
-                // Weekdays
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: _weekdays
-                        .map(
-                          (d) => SizedBox(
-                            width: 32,
-                            child: Center(
-                              child: Text(
-                                d,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textMuted,
-                                  fontWeight: FontWeight.w600,
+                  // Weekdays
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: _weekdays
+                          .map(
+                            (d) => SizedBox(
+                              width: 32,
+                              child: Center(
+                                child: Text(
+                                  d,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(),
+                          )
+                          .toList(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-                // Calendar Grid
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
+                  // Calendar Grid
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
@@ -364,59 +370,61 @@ class _DateSearchDialogState extends ConsumerState<DateSearchDialog> {
                     ),
                   ),
 
-                // Bottom Actions
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
+                  // Bottom Actions
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: notifier.reset,
+                          child: Text(
+                            'Reset',
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: AppColors.primary
+                                .withValues(alpha: 0.3),
+                            disabledForegroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: (startDate != null && endDate != null)
+                              ? () {
+                                  Navigator.of(context).pop(
+                                    DateTimeRange(
+                                      start: startDate,
+                                      end: endDate,
+                                    ),
+                                  );
+                                }
+                              : null,
+                          child: const Text(
+                            'Apply',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: notifier.reset,
-                        child: Text(
-                          'Reset',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textMuted,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.primary.withValues(
-                            alpha: 0.3,
-                          ),
-                          disabledForegroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: (startDate != null && endDate != null)
-                            ? () {
-                                Navigator.of(context).pop(
-                                  DateTimeRange(start: startDate, end: endDate),
-                                );
-                              }
-                            : null,
-                        child: const Text(
-                          'Apply',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
           ),
         ),
